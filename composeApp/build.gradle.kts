@@ -7,6 +7,36 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
+
+    id("org.jetbrains.kotlinx.kover") version "0.8.0"
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                // Entry Points
+                classes("MainKt") // Desktop
+                classes("*.MainActivity") // Android
+
+                // Generated Classes & Resources
+                packages("*.generated.*")
+
+                // Dependency Injection
+                packages("*di*")
+
+                // Compose Related
+                classes("*ComposableSingletons*")
+                annotatedBy("androidx.compose.runtime.Composable")
+            }
+        }
+
+        verify {
+            rule {
+                minBound(80)
+            }
+        }
+    }
 }
 
 kotlin {
@@ -16,9 +46,9 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     jvm("desktop")
-    
+
     listOf(
         iosX64(),
         iosArm64(),
@@ -29,13 +59,16 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     sourceSets {
         val desktopMain by getting
-        
+
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
+            // Coroutines
+            implementation(libs.kotlinx.coroutines.android)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -44,9 +77,21 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
+
+            // Coroutines
+            implementation(libs.kotlinx.coroutines.core)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+
+            // Coroutines
+            implementation(libs.kotlinx.coroutines.test)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
+
+            // Coroutines
+            implementation(libs.kotlinx.coroutines.swing)
         }
     }
 }
@@ -65,6 +110,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
         resources {
